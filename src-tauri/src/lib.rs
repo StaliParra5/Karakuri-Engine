@@ -76,9 +76,16 @@ fn spawn_engine_sidecar(app: &AppHandle) -> Result<(String, CommandChild), Strin
   let backend_url = format!("http://127.0.0.1:{port}");
   let (program, mut base_args) = resolve_engine_command();
   base_args.push(port.to_string());
-  let (mut rx, child) = app
-    .shell()
-    .command(program)
+
+  let mut cmd = app.shell().command(program);
+  
+  if cfg!(debug_assertions) {
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let python_path = manifest_dir.join("..");
+    cmd = cmd.env("PYTHONPATH", python_path.to_string_lossy().into_owned());
+  }
+
+  let (mut rx, child) = cmd
     .args(base_args)
     .spawn()
     .map_err(|error| error.to_string())?;
@@ -86,11 +93,21 @@ fn spawn_engine_sidecar(app: &AppHandle) -> Result<(String, CommandChild), Strin
   let app_handle = app.clone();
   tauri::async_runtime::spawn(async move {
     while let Some(event) = rx.recv().await {
-      if let CommandEvent::Stdout(line_bytes) = event {
-        let line = String::from_utf8_lossy(&line_bytes).trim().to_string();
-        if !line.is_empty() {
-          let _ = app_handle.emit("ai_progress_status", line);
+      match event {
+        CommandEvent::Stdout(line_bytes) => {
+          let line = String::from_utf8_lossy(&line_bytes).trim().to_string();
+          if !line.is_empty() {
+            let _ = app_handle.emit("ai_progress_status", line);
+          }
         }
+        CommandEvent::Stderr(line_bytes) => {
+          let line = String::from_utf8_lossy(&line_bytes).trim().to_string();
+          if !line.is_empty() {
+            eprintln!("Python Sidecar Stderr: {}", line);
+            let _ = app_handle.emit("ai_progress_status", format!("ERROR: {}", line));
+          }
+        }
+        _ => {}
       }
     }
   });
