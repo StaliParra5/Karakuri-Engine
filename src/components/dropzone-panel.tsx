@@ -1,5 +1,4 @@
 import { DndContext, useDroppable } from '@dnd-kit/core'
-import { AudioLines, FolderInput, Sparkles } from 'lucide-react'
 import type { SelectedAudioFile } from '../types/dashboard'
 
 interface DropzonePanelProps {
@@ -14,99 +13,56 @@ function DropTarget({ dropError, isDraggingAudio, selectedAudio, onBrowse }: Dro
   const isActive = isOver || isDraggingAudio
 
   return (
-    <div
+    <section
       ref={setNodeRef}
-      className={`relative overflow-hidden rounded-[30px] border p-6 transition duration-300 ${
+      onClick={onBrowse}
+      className={`glass-panel rounded-xl p-8 flex flex-col items-center justify-center min-h-[260px] border-2 border-dashed transition-all cursor-pointer relative group overflow-hidden ${
         isActive
-          ? 'border-cyan-200/45 bg-cyan-200/10 shadow-[0_0_0_1px_rgba(167,243,255,0.15),0_0_80px_rgba(59,130,246,0.2)]'
-          : 'border-white/10 bg-slate-950/50'
+          ? 'border-[#00f2ff] bg-[#00f2ff]/10 shadow-[0_0_20px_rgba(0,242,255,0.2)]'
+          : 'border-white/10 hover:border-[#00f2ff]/70'
       }`}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(125,211,252,0.12),transparent_45%)]" />
-      <div className="relative flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.32em] text-cyan-100/80">
-              Audio intake
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">Select an audio file</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBrowse}
-              className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-cyan-200 transition hover:border-cyan-300/50 hover:bg-cyan-500/20 active:scale-95 cursor-pointer"
-              type="button"
-            >
-              Browse File
-            </button>
-            <div className="rounded-full border border-white/12 bg-white/6 p-3 text-cyan-100">
-              <FolderInput className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        <p className="max-w-xl text-sm leading-7 text-slate-300">
-          Usa drag and drop o haz clic en "Browse File". El dashboard aceptará
-          rutas locales `.mp3`, `.ogg` y `.wav` para el motor.
+      <div className="absolute inset-0 bg-[#00f2ff]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+      
+      <div className="z-10 flex flex-col items-center text-center w-full">
+        <span className="material-symbols-outlined text-6xl text-[#00f2ff] mb-3 group-hover:scale-110 transition-transform duration-300 neon-text-cyan">
+          upload_file
+        </span>
+        <h2 className="font-display-lg text-xl font-bold text-white mb-2 neon-text-cyan">
+          Import Audio Track
+        </h2>
+        <p className="text-sm text-[#b9cacb] max-w-md mb-4">
+          Drag and drop your <code className="text-[#00f2ff]">.mp3</code>, <code className="text-[#00f2ff]">.ogg</code>, or <code className="text-[#00f2ff]">.wav</code> file here, or click to browse.
         </p>
 
-        <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[28px] border border-dashed border-white/14 bg-black/20 p-5">
-            <div className="flex items-center gap-3 text-sm text-slate-200">
-              <Sparkles className="h-4 w-4 text-cyan-200" />
-              {isActive ? 'Release to ingest the local asset.' : 'Waiting for audio file.'}
-            </div>
-
-            {dropError ? (
-              <p className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                {dropError}
-              </p>
-            ) : null}
-
-            {selectedAudio ? (
-              <div className="mt-4 grid gap-3 rounded-3xl border border-emerald-300/12 bg-emerald-300/8 p-4">
-                <div className="flex items-center gap-3 text-white">
-                  <AudioLines className="h-4 w-4 text-emerald-200" />
-                  <span className="font-medium">{selectedAudio.fileName}</span>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.24em] text-emerald-100/85">
-                  <span className="rounded-full border border-emerald-200/20 px-3 py-1">
-                    {selectedAudio.extension}
-                  </span>
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-slate-300">
-                    Ready for `/analyze/rhythm`
-                  </span>
-                </div>
-                <p className="text-sm text-slate-300">{selectedAudio.path}</p>
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-slate-400">
-                Ningún audio seleccionado todavía.
-              </p>
-            )}
+        {dropError && (
+          <div className="w-full max-w-md rounded-lg border border-rose-500/25 bg-rose-500/10 px-4 py-2.5 text-xs text-rose-300 mb-2">
+            {dropError}
           </div>
+        )}
 
-          <div className="rounded-[28px] border border-white/10 bg-white/6 p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-white/85">
-              Supported formats
-            </h3>
-            <div className="mt-4 flex flex-wrap gap-3">
-              {['mp3', 'ogg', 'wav'].map((extension) => (
-                <span
-                  key={extension}
-                  className="rounded-full border border-white/12 bg-slate-950/45 px-3 py-1 text-sm text-slate-200"
-                >
-                  .{extension}
-                </span>
-              ))}
+        {selectedAudio ? (
+          <div className="w-full max-w-lg rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-left cursor-default" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-white truncate max-w-[70%]">
+                {selectedAudio.fileName}
+              </span>
+              <span className="font-label-mono text-[10px] text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-400/20">
+                {selectedAudio.extension.toUpperCase()}
+              </span>
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-400">
-              La ruta se captura para evitar uploads intermedios en modo Tauri y mantener el contrato local-first.
-            </p>
+            <p className="text-xs font-label-mono text-[#b9cacb] truncate mb-1">{selectedAudio.path}</p>
+            <span className="text-[10px] uppercase tracking-wider text-emerald-300 font-semibold">
+              Ready for /analyze/rhythm
+            </span>
           </div>
-        </div>
+        ) : (
+          <span className="text-xs text-slate-400 font-label-mono">
+            No audio track selected yet.
+          </span>
+        )}
       </div>
-    </div>
+    </section>
   )
 }
 

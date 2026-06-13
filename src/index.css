@@ -2,9 +2,9 @@
 
 :root {
   color-scheme: dark;
-  color: #e5eefb;
-  background: #06080d;
-  font-family: "Trebuchet MS", Verdana, sans-serif;
+  color: #dde2f5;
+  background: #0b111e;
+  font-family: "Inter", system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,22 +21,33 @@ body,
   margin: 0;
   min-width: 320px;
   min-height: 100%;
+  background-color: #0b111e;
 }
 
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(34, 211, 238, 0.12), transparent 24%),
-    linear-gradient(180deg, #07111d 0%, #03060b 100%);
+    radial-gradient(circle at top, rgba(0, 242, 255, 0.08), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(182, 0, 248, 0.06), transparent 35%),
+    #0b111e;
 }
 
 code {
-  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-family: "Geist", "Cascadia Code", "Fira Code", Consolas, monospace;
 }
 
 button,
 input {
   font: inherit;
+}
+
+/* Font helpers */
+.font-display-lg {
+  font-family: "Montserrat", sans-serif;
+}
+
+.font-label-mono {
+  font-family: "Geist", monospace;
 }
 
 @keyframes fade-in {
@@ -60,4 +71,86 @@ input {
 
 .delay-200 {
   animation-delay: 200ms;
+}
+
+/* Custom Range Slider */
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #00f2ff;
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: 0 0 12px #00f2ff;
+  border: none;
+  transition: transform 0.15s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: linear-gradient(90deg, #00f2ff 0%, #b600f8 100%);
+  border-radius: 2px;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 255, 0.3);
+}
+
+/* Glass & Neon Accents */
+.glass-panel {
+  background-color: rgba(22, 27, 41, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glow-border {
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.1);
+}
+
+.neon-text-cyan {
+  text-shadow: 0 0 8px rgba(0, 242, 255, 0.4);
+}
+
+.neon-text-violet {
+  text-shadow: 0 0 8px rgba(182, 0, 248, 0.4);
+}
+
+.glow-border-cyan {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.glow-border-cyan:hover {
+  border-color: rgba(0, 242, 255, 0.4);
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+}
+
+.glow-border-violet {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.glow-border-violet:hover {
+  border-color: rgba(182, 0, 248, 0.4);
+  box-shadow: 0 0 15px rgba(182, 0, 248, 0.1);
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   closestCenter,
   DndContext,
@@ -15,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, History, RefreshCw } from 'lucide-react'
+import { GripVertical, RefreshCw } from 'lucide-react'
 import { formatDuration } from '../lib/runtime'
 import type { DashboardHistoryEntry } from '../types/dashboard'
 
@@ -36,29 +37,36 @@ function SortableHistoryItem({ entry, onReuse }: SortableHistoryItemProps) {
     <article
       ref={setNodeRef}
       style={style}
-      className="relative flex items-center gap-2 rounded-[28px] border border-white/10 bg-white/5 p-4 pl-2 shadow-sm transition-colors hover:border-cyan-500/30"
+      className="relative flex items-center gap-3 rounded-xl border border-white/5 bg-[#080e1b]/40 p-4 transition-all hover:bg-[#080e1b]/80 hover:border-[#00f2ff]/20 group"
     >
       <div
-        className="flex cursor-grab items-center p-2 text-slate-500 hover:text-cyan-300 focus:outline-none"
+        className="flex cursor-grab items-center p-1.5 text-slate-500 hover:text-[#00f2ff] focus:outline-none"
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="h-5 w-5" />
+        <GripVertical className="h-4.5 w-4.5" />
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-white">{entry.audioFileName}</h3>
-          <p className="mt-1 text-sm text-slate-400">
-            {entry.metadata.artist || 'Unknown artist'} · {formatDuration(entry.result.durationMs)}
+      <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden">
+        <div className="overflow-hidden">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-white group-hover:text-[#00f2ff] transition-colors truncate text-sm">
+              {entry.audioFileName}
+            </span>
+            <span className="font-label-mono text-[9px] text-[#ebb2ff] bg-[#b600f8]/20 px-1.5 py-0.5 rounded border border-[#ebb2ff]/20 flex-shrink-0">
+              {Math.round(entry.result.tempoBpm)} BPM
+            </span>
+          </div>
+          <p className="text-xs text-[#b9cacb] font-label-mono truncate">
+            {entry.metadata.artist || 'Unknown artist'} · {formatDuration(entry.result.durationMs)} · Intensity: {entry.metadata.intensity}
           </p>
         </div>
         <button
-          className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:border-cyan-200/40 hover:bg-cyan-300/15"
+          className="bg-[#00f2ff]/10 border border-[#00f2ff]/30 text-[#00f2ff] hover:bg-[#00f2ff]/20 hover:border-[#00f2ff]/50 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-center flex-shrink-0"
           onClick={() => onReuse(entry)}
           type="button"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className="h-3.5 w-3.5" />
           Reuse
         </button>
       </div>
@@ -73,6 +81,8 @@ interface HistoryPanelProps {
 }
 
 export function HistoryPanel({ historyEntries, onReuse, onReorder }: HistoryPanelProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -92,27 +102,59 @@ export function HistoryPanel({ historyEntries, onReuse, onReorder }: HistoryPane
     }
   }
 
+  // Filter entries dynamically based on title, artist, or creator
+  const filteredEntries = historyEntries.filter((entry) => {
+    const query = searchQuery.toLowerCase().trim()
+    if (!query) return true
+    
+    const titleMatch = entry.audioFileName.toLowerCase().includes(query)
+    const artistMatch = (entry.metadata.artist || '').toLowerCase().includes(query)
+    const creatorMatch = (entry.metadata.creator || '').toLowerCase().includes(query)
+    
+    return titleMatch || artistMatch || creatorMatch
+  })
+
   return (
-    <section className="rounded-[30px] border border-white/10 bg-slate-950/55 p-6 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
-      <div className="mb-5 flex items-center gap-3">
-        <History className="h-5 w-5 text-cyan-400" />
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.32em] text-slate-400">
-            Local CRM Storage
-          </p>
-          <h2 className="text-lg font-semibold text-white">Analysis Pipeline</h2>
+    <section className="glass-panel rounded-xl p-6">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-4">
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-[#00f2ff] text-2xl">history</span>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.32em] text-[#b9cacb] font-label-mono">
+              Local CRM Storage
+            </p>
+            <h2 className="text-lg font-bold text-white font-display-lg">Analysis History</h2>
+          </div>
         </div>
+
+        {/* Search bar inside the header area */}
+        {historyEntries.length > 0 && (
+          <div className="relative max-w-xs w-full sm:w-64">
+            <span className="material-symbols-outlined text-[#b9cacb] absolute left-3 top-2.5 text-lg select-none">search</span>
+            <input
+              type="text"
+              placeholder="Search by title, artist, creator..."
+              className="w-full bg-[#080e1b] border border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-all font-body-md"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {historyEntries.length === 0 ? (
-        <p className="text-sm leading-7 text-slate-400">
-          No stored runs yet. Completed analyses will appear here for quick reuse.
+        <p className="text-xs leading-6 text-[#b9cacb]">
+          No stored runs yet. Completed analyses will appear here for quick parameter reuse and dnd organization.
+        </p>
+      ) : filteredEntries.length === 0 ? (
+        <p className="text-xs leading-6 text-[#b9cacb] italic">
+          No beatmaps found matching "{searchQuery}".
         </p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={historyEntries} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-3">
-              {historyEntries.map((entry) => (
+          <SortableContext items={filteredEntries} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+              {filteredEntries.map((entry) => (
                 <SortableHistoryItem key={entry.id} entry={entry} onReuse={onReuse} />
               ))}
             </div>

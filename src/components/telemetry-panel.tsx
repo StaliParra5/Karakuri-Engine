@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Loader2, Play, Server } from 'lucide-react'
+import { Check, Play } from 'lucide-react'
 
 interface TelemetryPanelProps {
   backendUrl: string | null
@@ -9,7 +9,7 @@ interface TelemetryPanelProps {
 export function TelemetryPanel({ backendUrl, isAnalyzing, progressLines }: TelemetryPanelProps) {
   const latestLog = progressLines[progressLines.length - 1] || ''
   
-  let activePhase = 0 // 0 = idle, 1 = rhythm, 2 = spatial, 3 = polish/export, 4 = complete
+  let activePhase = 0 // 0 = idle, 1 = rhythm, 2 = spatial, 3 = geometry, 4 = complete
   
   if (isAnalyzing) {
     activePhase = 1
@@ -31,110 +31,125 @@ export function TelemetryPanel({ backendUrl, isAnalyzing, progressLines }: Telem
     ) {
       activePhase = 3
     }
-  } else if (latestLog.includes('exitoso') || latestLog.includes('completado') || latestLog.includes('captured') || latestLog.includes('complete')) {
+  } else if (
+    latestLog.includes('exitoso') ||
+    latestLog.includes('completado') ||
+    latestLog.includes('captured') ||
+    latestLog.includes('complete')
+  ) {
     activePhase = 4
   }
 
   const phases = [
     {
       id: 1,
-      name: 'Rhythm Analysis (DSP)',
-      desc: 'Librosa STFT & dynamic peak picking',
+      name: 'Phase 1: Rhythm Analysis (DSP)',
+      desc: 'Librosa spectral density & peak picking',
     },
     {
       id: 2,
-      name: 'Spatial Prediction (ONNX)',
-      desc: 'Deep neural network tensor inference',
+      name: 'Phase 2: ONNX Inference',
+      desc: 'Deep neural network spatial generation',
     },
     {
       id: 3,
-      name: 'Geometric Polish & Packing',
+      name: 'Phase 3: Geometry Polish',
       desc: 'Catmull-Rom splines & .osz compilation',
     },
   ]
 
   return (
-    <aside className="rounded-[30px] border border-white/10 bg-slate-950/55 p-6 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
-      <div className="mb-5 flex items-center justify-between">
+    <section className="glass-panel rounded-xl p-6 flex flex-col gap-6">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Server className="h-5 w-5 text-cyan-400" />
+          <span className="material-symbols-outlined text-[#00f2ff] text-2xl">timeline</span>
           <div>
-            <p className="text-[10px] uppercase tracking-[0.32em] text-slate-400">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-[#b9cacb] font-label-mono">
               Engine Status
             </p>
-            <h2 className="text-lg font-semibold text-white">Runtime Pipelines</h2>
+            <h2 className="text-lg font-bold text-white font-display-lg">Runtime Pipeline</h2>
           </div>
         </div>
         <div
-          className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-semibold ${
+          className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-bold border ${
             isAnalyzing
-              ? 'border border-amber-500/25 bg-amber-500/10 text-amber-300 animate-pulse'
+              ? 'border-amber-500/25 bg-amber-500/10 text-amber-300 animate-pulse'
               : activePhase === 4
-                ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-                : 'border border-slate-700 bg-slate-800 text-slate-400'
+                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                : 'border-white/10 bg-white/5 text-slate-400'
           }`}
         >
           {isAnalyzing ? 'Processing' : activePhase === 4 ? 'Success' : 'Idle'}
         </div>
       </div>
 
-      <div className="mb-5 space-y-3 rounded-2xl border border-white/5 bg-black/20 p-4">
+      <div className="flex flex-col gap-5 relative pl-2">
+        {/* Vertical Line */}
+        <div className="absolute left-6 top-4 bottom-4 w-px bg-white/10"></div>
+        
         {phases.map((phase) => {
           const isDone = activePhase > phase.id || activePhase === 4
           const isActive = activePhase === phase.id
 
           return (
-            <div
-              key={phase.id}
-              className={`flex items-start gap-3 rounded-xl p-2.5 transition duration-300 ${
-                isActive ? 'bg-cyan-500/5 border border-cyan-500/15' : 'border border-transparent'
-              }`}
-            >
-              <div className="mt-0.5">
+            <div key={phase.id} className="flex items-start gap-4 relative z-10">
+              <div className="flex items-center justify-center">
                 {isDone ? (
-                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400" />
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500 flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                    <Check className="h-4 w-4 text-emerald-400" />
+                  </div>
                 ) : isActive ? (
-                  <Loader2 className="h-4.5 w-4.5 text-cyan-400 animate-spin" />
+                  <div className="w-8 h-8 rounded-full bg-[#00f2ff]/20 border border-[#00f2ff] flex items-center justify-center shadow-[0_0_10px_rgba(0,242,255,0.4)]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#00f2ff] animate-ping"></span>
+                  </div>
                 ) : (
-                  <Circle className="h-4.5 w-4.5 text-slate-600" />
+                  <div className="w-8 h-8 rounded-full bg-[#0d1320] border border-white/10 flex items-center justify-center">
+                    <span className="w-2 h-2 rounded-full bg-white/20"></span>
+                  </div>
                 )}
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col pt-0.5">
                 <span
-                  className={`text-xs font-semibold ${
-                    isActive ? 'text-cyan-300' : isDone ? 'text-slate-300' : 'text-slate-500'
+                  className={`text-sm font-semibold transition-colors duration-300 ${
+                    isActive ? 'text-[#00f2ff] neon-text-cyan' : isDone ? 'text-slate-200' : 'text-slate-500'
                   }`}
                 >
                   {phase.name}
                 </span>
-                <span className="text-[10px] text-slate-400 mt-0.5">{phase.desc}</span>
+                <span className="text-xs text-[#b9cacb] mt-0.5">{phase.desc}</span>
               </div>
             </div>
           )
         })}
       </div>
 
-      <div className="space-y-1.5 font-mono text-[11px] leading-relaxed">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 block mb-2">Stdout stream</span>
-        <div className="max-h-[100px] overflow-y-auto rounded-xl border border-white/5 bg-black/40 p-3 space-y-1 text-slate-400 scrollbar-thin scrollbar-thumb-slate-700">
-          {progressLines.map((line, index) => (
-            <div key={`${line}-${index}`} className="truncate animate-fade-in">
-              <span className="text-cyan-500/70 mr-1.5">&gt;</span>
-              {line}
-            </div>
-          ))}
+      {/* Stdout Console */}
+      <div className="space-y-1.5">
+        <span className="text-[9px] uppercase tracking-[0.2em] text-[#b9cacb] block font-label-mono">Stdout stream</span>
+        <div className="max-h-[120px] overflow-y-auto rounded-xl border border-white/5 bg-black/40 p-3 space-y-1 text-slate-400 font-label-mono text-xs custom-scrollbar">
+          {progressLines.length === 0 ? (
+            <div className="text-slate-600 italic">No output logged yet...</div>
+          ) : (
+            progressLines.map((line, index) => (
+              <div key={`${line}-${index}`} className="truncate animate-fade-in flex items-start gap-1">
+                <span className="text-[#00f2ff]/70 select-none">&gt;</span>
+                <span className="break-all">{line}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-cyan-500/10 bg-cyan-500/5 p-3 text-xs text-cyan-100/95">
-        <div className="flex items-center gap-2 font-medium">
-          <Play className="h-3.5 w-3.5 text-cyan-400" />
-          Endpoint
+      {/* Endpoint URL loopback */}
+      <div className="rounded-xl border border-[#00f2ff]/10 bg-[#00f2ff]/5 p-3 text-xs text-[#00f2ff]/95">
+        <div className="flex items-center gap-2 font-semibold font-display-lg uppercase tracking-wider text-[10px]">
+          <Play className="h-3 w-3 text-[#00f2ff]" />
+          Endpoint Loopback
         </div>
-        <p className="mt-1 font-mono text-[10px] leading-5 text-cyan-300/80 truncate">
+        <p className="mt-1 font-label-mono text-xs text-[#00f2ff]/80 truncate">
           {backendUrl ?? 'No loopback URL resolved yet.'}
         </p>
       </div>
-    </aside>
+    </section>
   )
 }

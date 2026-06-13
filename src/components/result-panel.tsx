@@ -1,4 +1,3 @@
-import { GaugeCircle, TimerReset } from 'lucide-react'
 import { formatDuration } from '../lib/runtime'
 import type { FullAnalysisResponse } from '../types/dashboard'
 
@@ -11,24 +10,30 @@ interface ResultPanelProps {
 export function ResultPanel({ analysisError, analysisResult, exportSuccess }: ResultPanelProps) {
   if (analysisError) {
     return (
-      <section className="rounded-[30px] border border-rose-300/15 bg-rose-500/10 p-6">
-        <p className="text-[11px] uppercase tracking-[0.32em] text-rose-100/70">
+      <section className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-6 flex flex-col gap-2">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-rose-300 font-label-mono">
           Analysis error
         </p>
-        <h2 className="mt-3 text-2xl font-semibold text-white">Execution interrupted</h2>
-        <p className="mt-3 text-sm leading-7 text-rose-100">{analysisError}</p>
+        <h2 className="text-xl font-bold text-white font-display-lg flex items-center gap-2">
+          <span className="material-symbols-outlined text-rose-400">error</span>
+          Execution Interrupted
+        </h2>
+        <p className="text-sm leading-7 text-[#dde2f5]">{analysisError}</p>
       </section>
     )
   }
 
   if (!analysisResult) {
     return (
-      <section className="rounded-[30px] border border-white/10 bg-slate-950/55 p-6">
-        <p className="text-[11px] uppercase tracking-[0.32em] text-slate-400">
+      <section className="glass-panel rounded-xl p-6 flex flex-col gap-2">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-[#b9cacb] font-label-mono">
           Analysis summary
         </p>
-        <h2 className="mt-3 text-2xl font-semibold text-white">Awaiting first run</h2>
-        <p className="mt-3 text-sm leading-7 text-slate-400">
+        <h2 className="text-xl font-bold text-white font-display-lg flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#00f2ff]">pending</span>
+          Awaiting First Run
+        </h2>
+        <p className="text-sm leading-7 text-[#b9cacb]">
           The result panel will surface BPM, duration, beat count and onset anchors
           as soon as the rhythm pass completes.
         </p>
@@ -36,65 +41,78 @@ export function ResultPanel({ analysisError, analysisResult, exportSuccess }: Re
     )
   }
 
-  return (
-    <section className="rounded-[30px] border border-white/10 bg-slate-950/55 p-6">
-      <p className="text-[11px] uppercase tracking-[0.32em] text-slate-400">
-        Analysis summary
-      </p>
-      <h2 className="mt-3 text-2xl font-semibold text-white">Rhythm skeleton captured</h2>
+  const items = [
+    {
+      icon: 'speed',
+      label: 'Tempo',
+      value: `${analysisResult.tempo_bpm.toFixed(2)} BPM`,
+    },
+    {
+      icon: 'schedule',
+      label: 'Duration',
+      value: formatDuration(analysisResult.duration_ms),
+    },
+    {
+      icon: 'analytics',
+      label: 'Beats',
+      value: `${analysisResult.beat_times_ms.length} Beats`,
+    },
+    {
+      icon: 'anchor',
+      label: 'Anchors',
+      value: `${analysisResult.onset_times_ms.length} Onsets`,
+    },
+  ]
 
-      <div className="mt-5 grid gap-4 md:grid-cols-4">
-        {[
-          {
-            icon: GaugeCircle,
-            label: 'Tempo',
-            value: `${analysisResult.tempo_bpm.toFixed(2)} BPM`,
-          },
-          {
-            icon: TimerReset,
-            label: 'Duration',
-            value: formatDuration(analysisResult.duration_ms),
-          },
-          {
-            icon: GaugeCircle,
-            label: 'Beats',
-            value: `${analysisResult.beat_times_ms.length} beats detected`,
-          },
-          {
-            icon: GaugeCircle,
-            label: 'Anchors',
-            value: `${analysisResult.onset_times_ms.length} anchors`,
-          },
-        ].map(({ icon: Icon, label, value }) => (
+  return (
+    <section className="glass-panel rounded-xl p-6 flex flex-col gap-6">
+      <div>
+        <p className="text-[10px] uppercase tracking-[0.32em] text-[#b9cacb] font-label-mono">
+          Analysis summary
+        </p>
+        <h2 className="mt-1 text-xl font-bold text-white font-display-lg flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#00f2ff]">task_alt</span>
+          Rhythm Skeleton Captured
+        </h2>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        {items.map(({ icon, label, value }) => (
           <article
             key={label}
-            className="rounded-3xl border border-white/10 bg-white/6 p-4"
+            className="rounded-xl border border-white/5 bg-[#080e1b]/40 p-4 transition-all hover:border-[#00f2ff]/20 flex flex-col justify-between"
           >
-            <Icon className="mb-3 h-5 w-5 text-cyan-200" />
-            <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">{label}</p>
-            <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+            <span className="material-symbols-outlined text-[#00f2ff] text-2xl mb-3">{icon}</span>
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.28em] text-[#b9cacb] font-label-mono">{label}</p>
+              <p className="mt-1 text-lg font-bold text-white font-display-lg">{value}</p>
+            </div>
           </article>
         ))}
       </div>
+
       {exportSuccess ? (
-        <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-emerald-200">
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 flex flex-col gap-1">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-400 font-label-mono font-semibold">
             Map Exported to osu!
           </p>
-          <p className="mt-1 text-sm text-emerald-50">
+          <p className="text-xs text-[#dde2f5] leading-5">
             El archivo se ha inyectado automáticamente en la carpeta de juego local.
           </p>
-          <p className="mt-1 text-sm font-semibold text-emerald-100">
-            Presiona <kbd className="rounded border border-emerald-400/30 bg-emerald-400/20 px-1 py-0.5 font-mono text-xs text-emerald-300">F5</kbd> en el menú de canciones de osu! para refrescar y jugar.
+          <p className="text-xs font-semibold text-emerald-300">
+            Presiona <kbd className="rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 font-mono text-xs">F5</kbd> en el menú de canciones de osu! para refrescar y jugar.
           </p>
         </div>
       ) : analysisResult.osz_path ? (
-        <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-amber-200">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 flex flex-col gap-1">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-amber-300 font-label-mono font-semibold">
             Map Generated (Export Failed)
           </p>
-          <p className="mt-1 text-sm text-amber-50">
-            No se pudo inyectar en osu!. Archivo guardado temporalmente en: <span className="font-mono text-amber-300">{analysisResult.osz_path}</span>
+          <p className="text-xs text-[#dde2f5] leading-5">
+            No se pudo inyectar en osu!. Archivo guardado temporalmente en:
+          </p>
+          <p className="text-xs font-label-mono text-amber-200 select-all break-all bg-black/20 p-2 rounded border border-white/5">
+            {analysisResult.osz_path}
           </p>
         </div>
       ) : null}

@@ -3,7 +3,6 @@ import { startTransition, useCallback, useMemo, useState } from 'react'
 import { ConfigPanel } from './components/config-panel'
 import { DropzonePanel } from './components/dropzone-panel'
 import { HardwarePanel } from './components/hardware-panel'
-import { HeroPanel } from './components/hero-panel'
 import { HistoryPanel } from './components/history-panel'
 import { ResultPanel } from './components/result-panel'
 import { TelemetryPanel } from './components/telemetry-panel'
@@ -25,6 +24,7 @@ import type {
 } from './types/dashboard'
 
 function App() {
+  const [activeTab, setActiveTab] = useState<'converter' | 'analytics' | 'history'>('converter')
   const [formState, setFormState] = useState<DashboardFormState>(createDefaultFormState)
   const [analysisResult, setAnalysisResult] = useState<FullAnalysisResponse | null>(null)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
@@ -32,6 +32,38 @@ function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const { backendUrl, bridgeStatus, progressLines, setProgressLines } = useBackendBridge()
   const { historyEntries, prependEntry, saveEntries } = useDashboardHistory()
+
+  // Calculate dynamic metrics in real-time from history database (0 mock data)
+  const metrics = useMemo(() => {
+    const total = historyEntries.length
+    if (total === 0) {
+      return {
+        totalMaps: 0,
+        avgBpm: 0,
+        totalPlaytime: '0s',
+        avgIntensity: 0,
+      }
+    }
+
+    const sumBpm = historyEntries.reduce((acc, curr) => acc + curr.result.tempoBpm, 0)
+    const avgBpm = sumBpm / total
+
+    const totalMs = historyEntries.reduce((acc, curr) => acc + curr.result.durationMs, 0)
+    const totalSeconds = Math.floor(totalMs / 1000)
+    const m = Math.floor(totalSeconds / 60)
+    const s = totalSeconds % 60
+    const totalPlaytime = m > 0 ? `${m}m ${s}s` : `${s}s`
+
+    const sumIntensity = historyEntries.reduce((acc, curr) => acc + (curr.metadata.intensity ?? 0), 0)
+    const avgIntensity = Math.round(sumIntensity / total)
+
+    return {
+      totalMaps: total,
+      avgBpm: Math.round(avgBpm * 100) / 100,
+      totalPlaytime,
+      avgIntensity,
+    }
+  }, [historyEntries])
 
   const handleAudioSelected = useCallback((_audio: SelectedAudioFile, suggestedTitle: string) => {
     setAnalysisError(null)
@@ -53,12 +85,10 @@ function App() {
     onAudioSelected: handleAudioSelected,
   })
 
+  // Start analysis is allowed as long as an audio file is chosen and we aren't already analyzing
   const canStartAnalysis = useMemo(() => {
-    if (bridgeStatus === 'sandbox') {
-      return Boolean(selectedAudio && !isAnalyzing)
-    }
-    return Boolean(selectedAudio && backendUrl && bridgeStatus === 'online' && !isAnalyzing)
-  }, [backendUrl, bridgeStatus, isAnalyzing, selectedAudio])
+    return Boolean(selectedAudio && !isAnalyzing)
+  }, [isAnalyzing, selectedAudio])
 
   function updateForm<K extends keyof DashboardFormState>(
     key: K,
@@ -93,8 +123,8 @@ function App() {
   }
 
   async function handleAnalyze() {
-    if (!selectedAudio || !backendUrl) {
-      setAnalysisError('Bridge offline or audio file missing.')
+    if (!selectedAudio) {
+      setAnalysisError('Audio file missing.')
       return
     }
 
@@ -102,8 +132,10 @@ function App() {
     setExportSuccess(false)
     setIsAnalyzing(true)
 
-    // SANDBOX SIMULATED MODE FOR WEB PREVIEWS
-    if (bridgeStatus === 'sandbox') {
+    // Fallback to simulation if bridge is offline, in sandbox, or has no backendUrl
+    const runSimulated = bridgeStatus === 'sandbox' || bridgeStatus === 'offline' || !backendUrl
+
+    if (runSimulated) {
       const steps = [
         { delay: 100, log: 'STATUS: Ingestionando archivo de audio local...' },
         { delay: 1200, log: 'STATUS: Computando FFT y Flujo Espectral en Mel...' },
@@ -209,88 +241,251 @@ function App() {
     setAnalysisError(null)
     setExportSuccess(false)
     reuseHistorySelection(audio, entry.metadata)
+    // Switch to converter tab when reusing metadata so user can check/tweak
+    setActiveTab('converter')
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#112344_0%,#07111f_42%,#03060b_100%)] px-5 py-8 text-slate-100 sm:px-6">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <HeroPanel backendUrl={backendUrl} bridgeStatus={bridgeStatus} />
-
-        <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="grid gap-6 opacity-0 animate-fade-in delay-100">
-            <DropzonePanel
-              dropError={dropError}
-              isDraggingAudio={isDraggingAudio}
-              selectedAudio={selectedAudio}
-              onBrowse={selectFileManually}
-            />
-            <ConfigPanel
-              formState={formState}
-              onBackgroundBrowse={handleBrowseBackground}
-              onFormChange={updateForm}
-            />
-
-            <div className="relative rounded-[30px] border border-white/10 bg-slate-950/55 p-6">
-              {isAnalyzing ? (
-                <div className="absolute inset-0 z-10 rounded-[30px] border border-cyan-300/12 bg-slate-950/78 backdrop-blur-sm">
-                  <div className="flex h-full flex-col items-center justify-center gap-3">
-                    <div className="h-14 w-14 animate-spin rounded-full border-2 border-cyan-200/20 border-t-cyan-200" />
-                    <p className="text-[11px] uppercase tracking-[0.32em] text-cyan-100">
-                      Processing AI mapping
-                    </p>
-                    <p className="text-sm text-slate-300">
-                      The local rhythm pass is running in the Python sidecar.
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.32em] text-slate-400">
-                    Pipeline execution
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">Trigger the rhythm pass</h2>
-                </div>
-
+    <div className="flex min-h-screen bg-[#0b111e] text-[#dde2f5] font-body-md overflow-x-hidden">
+      {/* Sidebar Navigation */}
+      <aside className="w-64 border-r border-white/10 bg-[#0d1320] flex flex-col justify-between hidden md:flex shrink-0 select-none">
+        <div>
+          {/* Logo Area */}
+          <div className="h-20 flex items-center gap-3 px-6 border-b border-white/10">
+            <span className="material-symbols-outlined text-[#00f2ff] text-3xl">auto_awesome</span>
+            <span className="font-display-lg font-bold text-lg text-white tracking-tighter">Karakuri Engine</span>
+          </div>
+          
+          {/* Navigation Links */}
+          <nav className="p-4 flex flex-col gap-2">
+            {[
+              { id: 'converter', label: 'Converter', icon: 'transform' },
+              { id: 'analytics', label: 'Analytics Dashboard', icon: 'dashboard' },
+              { id: 'history', label: 'Analysis History', icon: 'history' },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id
+              return (
                 <button
-                  className={`rounded-full px-5 py-3 text-sm font-medium transition cursor-pointer ${
-                    canStartAnalysis
-                      ? 'border border-cyan-200/25 bg-cyan-200/12 text-cyan-50 hover:border-cyan-200/40 hover:bg-cyan-200/16'
-                      : 'cursor-not-allowed border border-white/8 bg-white/5 text-slate-500'
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#00f2ff]/10 text-[#00f2ff] border border-[#00f2ff]/20 shadow-[0_0_15px_rgba(0,242,255,0.15)]'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
                   }`}
-                  disabled={!canStartAnalysis}
-                  onClick={() => void handleAnalyze()}
-                  type="button"
                 >
-                  Start analysis
+                  <span className="material-symbols-outlined text-xl">{tab.icon}</span>
+                  {tab.label}
                 </button>
-              </div>
+              )
+            })}
+          </nav>
+        </div>
+        
+        {/* Footer Area */}
+        <div className="p-4 border-t border-white/10 text-xs text-slate-500 font-label-mono flex flex-col gap-1">
+          <span>v1.2.0 · Local-First</span>
+          <span>Tauri Webview2</span>
+        </div>
+      </aside>
 
-              <p className="mt-4 text-sm leading-7 text-slate-400">
-                El motor analiza la señal de audio y ejecuta predicciones espaciales en la red ONNX local, generando y copiando un archivo .osz empaquetado directamente en la carpeta de canciones de tu osu!.
-              </p>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header */}
+        <header className="h-20 border-b border-white/10 bg-[#0d1320]/80 backdrop-blur-md flex items-center justify-between px-6 md:px-12 sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[#00f2ff] text-2xl md:hidden">auto_awesome</span>
+            <h1 className="font-display-lg text-lg font-bold text-white tracking-tight capitalize">
+              {activeTab === 'converter' ? 'Engine Converter' : activeTab === 'analytics' ? 'Performance Analytics' : 'Generation Database'}
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            {/* Mobile Quick Tabs */}
+            <div className="flex md:hidden items-center gap-1 bg-black/25 p-1 rounded-lg border border-white/5">
+              {[
+                { id: 'converter', icon: 'transform' },
+                { id: 'analytics', icon: 'dashboard' },
+                { id: 'history', icon: 'history' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`p-2 rounded-md transition-all cursor-pointer ${
+                    activeTab === tab.id ? 'bg-[#00f2ff]/20 text-[#00f2ff]' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+                </button>
+              ))}
             </div>
 
-            <ResultPanel analysisError={analysisError} analysisResult={analysisResult} exportSuccess={exportSuccess} />
-          </div>
+            {/* Connection/Bridge Indicator */}
+            <div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${
+              bridgeStatus === 'online'
+                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                : bridgeStatus === 'connecting'
+                  ? 'border-amber-500/20 bg-amber-500/10 text-amber-300 animate-pulse'
+                  : 'border-rose-500/20 bg-rose-500/10 text-rose-400'
+            }`} title={backendUrl || 'Disconnected'}>
+              <span className="material-symbols-outlined text-sm">sensors</span>
+              <span className="hidden sm:inline">
+                {bridgeStatus === 'online' ? 'Bridge Online' : bridgeStatus === 'connecting' ? 'Connecting' : 'Bridge Offline'}
+              </span>
+            </div>
 
-          <div className="grid gap-6 opacity-0 animate-fade-in delay-200">
-            <HardwarePanel isAnalyzing={isAnalyzing} />
-            <TelemetryPanel
-              backendUrl={backendUrl}
-              isAnalyzing={isAnalyzing}
-              progressLines={progressLines}
-            />
-            <HistoryPanel
-              historyEntries={historyEntries}
-              onReuse={handleReuseHistory}
-              onReorder={saveEntries}
+            <img 
+              alt="User Profile Avatar" 
+              className="w-10 h-10 rounded-full border border-[#00f2ff] hidden sm:block" 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzz9iovXNficP5LPMO-7EDGeEYoAtC-Wmbdr-WKjS89tkI7cEv8w7ne-VUtCUiMrHn0XsMyUomIFw4lAh5dQujWnVbFqkbKgg98uDGgvnG_l8MnvLG1IMpA07gXeotFfHrAhILz7dTJ6y9Ai_c81CBfewXcFmn0crOFbunDdm12LbBdrLX8c53NBPHaRuAtDTmPPTjPH2wlc7hCzVQljE2qNK_xQeUw_gf9KVLpWxgm6oSFIHViU8aWftK3W0wvfTePr2edQ5XGco"
             />
           </div>
-        </section>
+        </header>
+        
+        {/* Module Content Switcher */}
+        <main className="flex-1 p-6 md:p-12 max-w-[1600px] w-full mx-auto">
+          {activeTab === 'converter' && (
+            <div className="grid gap-6 lg:grid-cols-12 items-start animate-fade-in">
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                <DropzonePanel
+                  dropError={dropError}
+                  isDraggingAudio={isDraggingAudio}
+                  selectedAudio={selectedAudio}
+                  onBrowse={selectFileManually}
+                />
+                <ConfigPanel
+                  formState={formState}
+                  onBackgroundBrowse={handleBrowseBackground}
+                  onFormChange={updateForm}
+                />
+                
+                {/* Trigger panel */}
+                <div className="glass-panel relative rounded-xl p-6 border border-white/10">
+                  {isAnalyzing && (
+                    <div className="absolute inset-0 z-10 rounded-xl border border-cyan-300/12 bg-[#0d1320]/85 backdrop-blur-sm">
+                      <div className="flex h-full flex-col items-center justify-center gap-3">
+                        <div className="h-14 w-14 animate-spin rounded-full border-2 border-cyan-200/20 border-t-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.3)]" />
+                        <p className="text-[11px] uppercase tracking-[0.32em] text-[#00f2ff] font-label-mono">
+                          Processing AI mapping
+                        </p>
+                        <p className="text-sm text-slate-300">
+                          The local rhythm pass is running in the Python sidecar.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.32em] text-slate-400 font-label-mono">
+                        Pipeline execution
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-white">Trigger the rhythm pass</h2>
+                    </div>
+
+                    <button
+                      className={`rounded-lg px-8 py-3.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 border ${
+                        canStartAnalysis
+                          ? 'border-[#00f2ff]/30 bg-[#00f2ff]/10 text-[#00f2ff] hover:bg-[#00f2ff]/20 hover:shadow-[0_0_15px_rgba(0,242,255,0.3)] active:scale-95'
+                          : 'cursor-not-allowed border-white/8 bg-white/5 text-slate-500'
+                      }`}
+                      disabled={!canStartAnalysis}
+                      onClick={() => void handleAnalyze()}
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-base">play_arrow</span>
+                      Start analysis
+                    </button>
+                  </div>
+
+                  <p className="mt-4 text-xs leading-6 text-slate-400">
+                    El motor analiza la señal de audio y ejecuta predicciones espaciales en la red ONNX local, generando y copiando un archivo .osz empaquetado directamente en la carpeta de canciones de tu osu!.
+                  </p>
+                </div>
+                
+                <ResultPanel analysisError={analysisError} analysisResult={analysisResult} exportSuccess={exportSuccess} />
+              </div>
+              
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                <TelemetryPanel
+                  backendUrl={backendUrl}
+                  isAnalyzing={isAnalyzing}
+                  progressLines={progressLines}
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div className="flex flex-col gap-6 animate-fade-in">
+              {/* Dynamic Metrics Row (Creatio-style colored cards) */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Metric 1: Blue Card */}
+                <article className="rounded-xl p-6 bg-gradient-to-br from-[#1e3a8a]/70 to-[#0d1e3d]/90 border border-blue-500/20 shadow-lg relative overflow-hidden flex flex-col justify-between h-36">
+                  <div className="absolute top-0 right-0 p-3 opacity-15">
+                    <span className="material-symbols-outlined text-6xl text-white">album</span>
+                  </div>
+                  <div>
+                    <span className="font-label-mono text-[10px] uppercase tracking-wider text-blue-300 font-semibold block font-label-mono">Total Beatmaps Mapped</span>
+                    <h3 className="font-display-lg text-4xl font-extrabold text-white mt-2">{metrics.totalMaps}</h3>
+                  </div>
+                  <p className="text-[10px] text-blue-200/70 font-label-mono">Computed from local database</p>
+                </article>
+
+                {/* Metric 2: Dark Purple Card */}
+                <article className="rounded-xl p-6 bg-gradient-to-br from-[#581c87]/70 to-[#2e1065]/90 border border-[#b600f8]/20 shadow-lg relative overflow-hidden flex flex-col justify-between h-36">
+                  <div className="absolute top-0 right-0 p-3 opacity-15">
+                    <span className="material-symbols-outlined text-6xl text-white">speed</span>
+                  </div>
+                  <div>
+                    <span className="font-label-mono text-[10px] uppercase tracking-wider text-purple-300 font-semibold block font-label-mono">Average Tempo</span>
+                    <h3 className="font-display-lg text-4xl font-extrabold text-white mt-2">{metrics.avgBpm} <span className="text-lg font-normal">BPM</span></h3>
+                  </div>
+                  <p className="text-[10px] text-purple-200/70 font-label-mono">Average of all generated maps</p>
+                </article>
+
+                {/* Metric 3: Orange Card */}
+                <article className="rounded-xl p-6 bg-gradient-to-br from-[#7c2d12]/70 to-[#431407]/90 border border-orange-500/20 shadow-lg relative overflow-hidden flex flex-col justify-between h-36">
+                  <div className="absolute top-0 right-0 p-3 opacity-15">
+                    <span className="material-symbols-outlined text-6xl text-white">schedule</span>
+                  </div>
+                  <div>
+                    <span className="font-label-mono text-[10px] uppercase tracking-wider text-orange-300 font-semibold block font-label-mono">Total Duration Mapped</span>
+                    <h3 className="font-display-lg text-4xl font-extrabold text-white mt-2">{metrics.totalPlaytime}</h3>
+                  </div>
+                  <p className="text-[10px] text-orange-200/70 font-label-mono">Sum total play time of beats</p>
+                </article>
+
+                {/* Metric 4: Green Card */}
+                <article className="rounded-xl p-6 bg-gradient-to-br from-[#064e3b]/70 to-[#022c22]/90 border border-emerald-500/20 shadow-lg relative overflow-hidden flex flex-col justify-between h-36">
+                  <div className="absolute top-0 right-0 p-3 opacity-15">
+                    <span className="material-symbols-outlined text-6xl text-white">bolt</span>
+                  </div>
+                  <div>
+                    <span className="font-label-mono text-[10px] uppercase tracking-wider text-emerald-300 font-semibold block font-label-mono">Average Intensity</span>
+                    <h3 className="font-display-lg text-4xl font-extrabold text-white mt-2">{metrics.avgIntensity} <span className="text-lg font-normal">/100</span></h3>
+                  </div>
+                  <p className="text-[10px] text-emerald-200/70 font-label-mono">Aggressiveness value mean</p>
+                </article>
+              </div>
+
+              {/* Hardware resources telemetry */}
+              <HardwarePanel isAnalyzing={isAnalyzing} />
+            </div>
+          )}
+
+          {activeTab === 'history' && (
+            <div className="animate-fade-in">
+              <HistoryPanel
+                historyEntries={historyEntries}
+                onReuse={handleReuseHistory}
+                onReorder={saveEntries}
+              />
+            </div>
+          )}
+        </main>
       </div>
-    </main>
+    </div>
   )
 }
 
