@@ -91,7 +91,19 @@ export function ResultPanel({ analysisError, analysisResult, exportSuccess }: Re
         ))}
       </div>
 
-      {exportSuccess ? (
+      {analysisResult.engine?.includes('Simulated') ? (
+        <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4 flex flex-col gap-1">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-blue-300 font-label-mono font-semibold">
+            Simulation Completed (Sandbox)
+          </p>
+          <p className="text-xs text-[#dde2f5] leading-5">
+            El mapa se ha simulado con éxito en modo Sandbox. En este modo virtual no se modifican los archivos locales de tu osu!.
+          </p>
+          <p className="text-xs font-label-mono text-blue-200 select-all break-all bg-black/20 p-2 rounded border border-white/5">
+            Virtual OSZ Path: {analysisResult.osz_path}
+          </p>
+        </div>
+      ) : exportSuccess ? (
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 flex flex-col gap-1">
           <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-400 font-label-mono font-semibold">
             Map Exported to osu!
@@ -104,14 +116,14 @@ export function ResultPanel({ analysisError, analysisResult, exportSuccess }: Re
           </p>
         </div>
       ) : analysisResult.osz_path ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 flex flex-col gap-1">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-amber-300 font-label-mono font-semibold">
+        <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 flex flex-col gap-1">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-rose-300 font-label-mono font-semibold">
             Map Generated (Export Failed)
           </p>
           <p className="text-xs text-[#dde2f5] leading-5">
-            No se pudo inyectar en osu!. Archivo guardado temporalmente en:
+            No se pudo inyectar en osu!. Verifica los permisos o el directorio de canciones. Archivo guardado temporalmente en:
           </p>
-          <p className="text-xs font-label-mono text-amber-200 select-all break-all bg-black/20 p-2 rounded border border-white/5">
+          <p className="text-xs font-label-mono text-rose-200 select-all break-all bg-black/20 p-2 rounded border border-white/5">
             {analysisResult.osz_path}
           </p>
         </div>
