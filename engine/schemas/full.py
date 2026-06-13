@@ -9,8 +9,13 @@ class FullAnalysisRequest(BaseModel):
     title: str = "Unknown Title"
     artist: str = "Unknown Artist"
     creator: str = "Automapper"
-    intensity: float = 1.0
+    difficulty: str = "Normal"
+    prompt: str = ""
     background_path: str | None = None
+    cs: float = 4.0
+    ar: float = 9.0
+    od: float = 8.0
+    hp: float = 6.0
 
 
 class FullAnalysisResponse(BaseModel):

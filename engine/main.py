@@ -52,7 +52,7 @@ async def analyze_full(request: FullAnalysisRequest):
             rhythm_data.onsets = rhythm_payload.get('onset_times_ms', [])
             
             # Fase 2: Espacial (ONNX)
-            spatial_response = run_spatial_inference(rhythm_data, emit_status)
+            spatial_response = run_spatial_inference(rhythm_data, str(resolved_path), emit_status)
             
             # Fase 3: Geometría (Catmull-Rom & Distance Snap)
             from engine.core.stage3_polish import apply_geometric_polish
@@ -62,7 +62,8 @@ async def analyze_full(request: FullAnalysisRequest):
             polished_objects = apply_geometric_polish(
                 spatial_objects=spatial_response.predicted_objects,
                 tempo_bpm=rhythm_payload.get('tempo_bpm', 120.0),
-                intensity=request.intensity
+                difficulty=request.difficulty,
+                prompt=request.prompt
             )
             
             # Compilación: Ensamblado .osu y empaquetado .osz

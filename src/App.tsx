@@ -41,7 +41,7 @@ function App() {
         totalMaps: 0,
         avgBpm: 0,
         totalPlaytime: '0s',
-        avgIntensity: 0,
+        mostUsedDifficulty: 'N/A',
       }
     }
 
@@ -54,14 +54,26 @@ function App() {
     const s = totalSeconds % 60
     const totalPlaytime = m > 0 ? `${m}m ${s}s` : `${s}s`
 
-    const sumIntensity = historyEntries.reduce((acc, curr) => acc + (curr.metadata.intensity ?? 0), 0)
-    const avgIntensity = Math.round(sumIntensity / total)
+    const difficultyCounts = historyEntries.reduce((acc, curr) => {
+      const diff = curr.metadata.difficulty || 'Unknown'
+      acc[diff] = (acc[diff] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    let mostUsedDifficulty = 'N/A'
+    let maxCount = 0
+    for (const [diff, count] of Object.entries(difficultyCounts)) {
+      if (count > maxCount) {
+        maxCount = count
+        mostUsedDifficulty = diff
+      }
+    }
 
     return {
       totalMaps: total,
       avgBpm: Math.round(avgBpm * 100) / 100,
       totalPlaytime,
-      avgIntensity,
+      mostUsedDifficulty,
     }
   }, [historyEntries])
 
@@ -189,8 +201,13 @@ function App() {
           title: formState.title,
           artist: formState.artist,
           creator: formState.creator,
-          intensity: formState.intensity,
+          difficulty: formState.difficulty,
+          prompt: formState.aiPrompt,
           background_path: formState.backgroundPath,
+          cs: formState.cs,
+          ar: formState.ar,
+          od: formState.od,
+          hp: formState.hp,
         }),
       })
 
@@ -234,8 +251,13 @@ function App() {
       title: entry.metadata.title || createDefaultTitle(entry.audioFileName),
       artist: entry.metadata.artist,
       creator: entry.metadata.creator,
-      intensity: entry.metadata.intensity,
+      difficulty: entry.metadata.difficulty,
+      aiPrompt: entry.metadata.aiPrompt,
       backgroundPath: entry.metadata.backgroundPath,
+      cs: entry.metadata.cs ?? 4.0,
+      ar: entry.metadata.ar ?? 9.0,
+      od: entry.metadata.od ?? 8.0,
+      hp: entry.metadata.hp ?? 6.0,
     })
     setAnalysisResult(null)
     setAnalysisError(null)
@@ -462,10 +484,10 @@ function App() {
                     <span className="material-symbols-outlined text-6xl text-white">bolt</span>
                   </div>
                   <div>
-                    <span className="font-label-mono text-[10px] uppercase tracking-wider text-emerald-300 font-semibold block font-label-mono">Average Intensity</span>
-                    <h3 className="font-display-lg text-4xl font-extrabold text-white mt-2">{metrics.avgIntensity} <span className="text-lg font-normal">/100</span></h3>
+                    <span className="font-label-mono text-[10px] uppercase tracking-wider text-emerald-300 font-semibold block font-label-mono">Favored Difficulty</span>
+                    <h3 className="font-display-lg text-4xl font-extrabold text-white mt-2">{metrics.mostUsedDifficulty}</h3>
                   </div>
-                  <p className="text-[10px] text-emerald-200/70 font-label-mono">Aggressiveness value mean</p>
+                  <p className="text-[10px] text-emerald-200/70 font-label-mono">Most commonly mapped</p>
                 </article>
               </div>
 

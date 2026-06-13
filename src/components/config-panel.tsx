@@ -7,14 +7,6 @@ interface ConfigPanelProps {
 }
 
 export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: ConfigPanelProps) {
-  // Determine intensity label
-  let intensityLabel = 'TECHNICAL'
-  if (formState.intensity < 35) {
-    intensityLabel = 'CHILL'
-  } else if (formState.intensity > 75) {
-    intensityLabel = 'EXPERT'
-  }
-
   return (
     <div className="flex flex-col gap-6">
       {/* Song Configuration */}
@@ -60,31 +52,65 @@ export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: Con
         </div>
       </section>
 
-      {/* Intensity Slider */}
+      {/* AI Mapping Configuration */}
       <section className="glass-panel rounded-xl p-6 flex flex-col gap-6">
-        <div className="flex justify-between items-end">
-          <h3 className="font-display-lg text-lg font-bold text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#00f2ff]">speed</span>
-            Mapping Intensity
-          </h3>
-          <span className="font-label-mono text-xs text-[#ebb2ff] bg-[#b600f8]/20 px-3 py-1 rounded border border-[#ebb2ff]/30">
-            {intensityLabel}
-          </span>
-        </div>
-        <div className="pt-4 pb-2">
-          <input
-            className="w-full"
-            max="100"
-            min="0"
-            type="range"
-            value={formState.intensity}
-            onChange={(event) => onFormChange('intensity', Number(event.target.value))}
-          />
-        </div>
-        <div className="flex justify-between font-label-mono text-xs text-[#b9cacb]">
-          <span>Chill</span>
-          <span>Technical ({formState.intensity})</span>
-          <span>Brain Power</span>
+        <h3 className="font-display-lg text-lg font-bold text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#00f2ff]">smart_toy</span>
+          AI Generation Settings
+        </h3>
+        
+        <div className="grid grid-cols-1 gap-6">
+          <div className="flex flex-col gap-2">
+            <label className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Map Difficulty</label>
+            <select
+              className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md cursor-pointer"
+              value={formState.difficulty}
+              onChange={(event) => onFormChange('difficulty', event.target.value)}
+            >
+              <option value="Easy">Easy</option>
+              <option value="Normal">Normal</option>
+              <option value="Hard">Hard</option>
+              <option value="Insane">Insane</option>
+              <option value="Expert">Expert</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">AI Directives (Prompt)</label>
+            <textarea
+              className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md resize-none"
+              placeholder="e.g. Mapea con saltos largos y agresivos, o prioriza streams técnicos rápidos..."
+              rows={3}
+              value={formState.aiPrompt}
+              onChange={(event) => onFormChange('aiPrompt', event.target.value)}
+            />
+          </div>
+
+          {/* osu! Difficulty Settings */}
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            {[
+              { id: 'cs', label: 'Circle Size (CS)', value: formState.cs },
+              { id: 'ar', label: 'Approach Rate (AR)', value: formState.ar },
+              { id: 'od', label: 'Overall Difficulty (OD)', value: formState.od },
+              { id: 'hp', label: 'HP Drain (HP)', value: formState.hp }
+            ].map((stat) => (
+              <div key={stat.id} className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <label className="font-label-mono text-[10px] text-[#b9cacb] uppercase tracking-wider">{stat.label}</label>
+                  <span className="font-label-mono text-xs text-[#ebb2ff]">{stat.value.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={stat.value}
+                  onChange={(e) => onFormChange(stat.id as 'cs'|'ar'|'od'|'hp', parseFloat(e.target.value))}
+                  className="w-full accent-[#00f2ff]"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

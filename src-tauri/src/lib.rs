@@ -16,8 +16,13 @@ struct HistoryMetadata {
   title: String,
   artist: String,
   creator: String,
-  intensity: u8,
+  difficulty: String,
+  ai_prompt: String,
   background_path: String,
+  cs: f64,
+  ar: f64,
+  od: f64,
+  hp: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -129,7 +134,10 @@ fn load_dashboard_history(app: AppHandle) -> Result<Vec<DashboardHistoryEntry>, 
   }
 
   let payload = fs::read_to_string(history_path).map_err(|error| error.to_string())?;
-  serde_json::from_str(&payload).map_err(|error| error.to_string())
+  match serde_json::from_str(&payload) {
+    Ok(entries) => Ok(entries),
+    Err(_) => Ok(Vec::new()), // Fallback to empty history if schema changed (e.g. intensity -> difficulty)
+  }
 }
 
 #[tauri::command]
@@ -148,7 +156,7 @@ fn save_dashboard_history(
 }
 
 #[tauri::command]
-fn export_to_osu(osz_path: String) -> Result<String, String> {
+fn export_to_osu(app: tauri::AppHandle, osz_path: String) -> Result<String, String> {
   let osz_path_buf = PathBuf::from(&osz_path);
   if !osz_path_buf.exists() {
     return Err("OSZ file not found".into());
@@ -191,7 +199,11 @@ fn export_to_osu(osz_path: String) -> Result<String, String> {
       Ok(dest_path.to_string_lossy().into_owned())
     }
     None => {
-      Err("osu! Songs folder not found. OSZ remains in temporary directory.".into())
+      // Fallback: If Songs folder not found, open the .osz file to auto-import via the OS default handler.
+      match app.shell().open(osz_path_buf.to_string_lossy().to_string(), None) {
+        Ok(_) => Ok(format!("Opened OSZ file with default handler: {}", osz_path)),
+        Err(e) => Err(format!("osu! Songs folder not found, and failed to open OSZ: {}", e)),
+      }
     }
   }
 }

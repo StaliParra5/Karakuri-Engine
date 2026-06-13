@@ -19,7 +19,8 @@ def quantize_model_if_needed(fp32_path: str, qint8_path: str):
         )
         print("STATUS: Cuantización dinámica completada.")
 
-def run_spatial_inference(rhythm_data, progress_callback=None) -> SpatialAnalysisResponse:
+def run_spatial_inference(rhythm_data, audio_path: str, progress_callback=None) -> SpatialAnalysisResponse:
+    import librosa
     if progress_callback:
         progress_callback("Iniciando Fase 2 (Espacial)")
     
@@ -29,64 +30,76 @@ def run_spatial_inference(rhythm_data, progress_callback=None) -> SpatialAnalysi
     fp32_path = os.path.join(models_dir, "osusync_model_v1_fp32.onnx")
     qint8_path = os.path.join(models_dir, "osusync_model_v1.onnx")
     
-    # Cuantizar si no existe la versión optimizada
     if progress_callback:
         progress_callback("Verificando e inicializando motor ONNX")
     quantize_model_if_needed(fp32_path, qint8_path)
     
-    # Cargar sesión de ONNX
     if progress_callback:
         progress_callback("Cargando grafo ONNX en memoria")
     session = ort.InferenceSession(qint8_path, providers=['CPUExecutionProvider'])
-    
-    # Procesar datos (adaptando rhythm_data a tensor de entrada)
-    onsets = rhythm_data.onsets
-    seq_length = 100
-        
-    # Crear tensor de entrada dummy basado en la longitud fija (batch_size=1, seq_length, feature_dim=10)
-    # En un modelo real, aquí se extraerían features específicos de librosa y se iteraría con ventanas deslizantes.
-    input_tensor = np.random.randn(1, seq_length, 10).astype(np.float32)
+    input_name = session.get_inputs()[0].name
     
     if progress_callback:
-        progress_callback("Ejecutando inferencia neuronal sobre clústers")
+        progress_callback("Extrayendo características acústicas reales (MFCC)")
+        
+    y, sr = librosa.load(audio_path, sr=22050)
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=10)
+    mfccs = mfccs.T  # Shape: (num_frames, 10)
     
-    # Ejecutar inferencia
-    input_name = session.get_inputs()[0].name
-    outputs = session.run(None, {input_name: input_tensor})
+    onsets = rhythm_data.onsets
+    if not onsets:
+        onsets = [0.0]
+        
+    onsets_frames = librosa.time_to_frames(np.array(onsets) / 1000.0, sr=sr)
     
-    # outputs[0] = coordinates (1, seq_length, 2)
-    # outputs[1] = object_types (1, seq_length, 3)
-    coords = outputs[0][0]
-    types_logits = outputs[1][0]
-    
+    seq_length = 100
     predicted_objects = []
     
+    num_chunks = int(np.ceil(len(onsets) / seq_length))
+    
     if progress_callback:
-        progress_callback("Decuantizando y mapeando resultados espaciales")
+        progress_callback("Ejecutando inferencia neuronal con Sliding Window")
         
-    for i in range(seq_length):
-        x_norm = float(coords[i][0])
-        y_norm = float(coords[i][1])
+    for chunk_idx in range(num_chunks):
+        if progress_callback:
+            progress_callback(f"Fase 2: Lote de red neuronal {chunk_idx + 1}/{num_chunks}")
+            
+        start_idx = chunk_idx * seq_length
+        end_idx = min(start_idx + seq_length, len(onsets))
+        actual_chunk_size = end_idx - start_idx
         
-        # Mapeo a resolución osu!
-        x = x_norm * 512.0
-        y = y_norm * 384.0
+        chunk_frames = onsets_frames[start_idx:end_idx]
+        chunk_onsets = onsets[start_idx:end_idx]
         
-        # Obtener el tipo con mayor probabilidad
-        type_idx = int(np.argmax(types_logits[i]))
-        obj_types = [1, 2, 12] # HitCircle, Slider, Spinner
-        obj_type = obj_types[type_idx]
+        # Construir tensor
+        input_tensor = np.zeros((1, seq_length, 10), dtype=np.float32)
+        for i, frame in enumerate(chunk_frames):
+            frame_idx = min(frame, len(mfccs) - 1)
+            input_tensor[0, i, :] = mfccs[frame_idx]
+            
+        outputs = session.run(None, {input_name: input_tensor})
+        coords = outputs[0][0]
+        types_logits = outputs[1][0]
         
-        # Asignar tiempo basado en onsets si existen
-        time_ms = float(onsets[i]) if i < len(onsets) else float(i * 500)
-        
-        predicted_objects.append(PredictedObject(
-            time_ms=time_ms,
-            x=x,
-            y=y,
-            object_type=obj_type
-        ))
-        
+        for i in range(actual_chunk_size):
+            x_norm = float(coords[i][0])
+            y_norm = float(coords[i][1])
+            
+            x = x_norm * 512.0
+            y = y_norm * 384.0
+            
+            type_idx = int(np.argmax(types_logits[i]))
+            obj_types = [1, 2, 12]
+            obj_type = obj_types[type_idx]
+            time_ms = float(chunk_onsets[i])
+            
+            predicted_objects.append(PredictedObject(
+                time_ms=time_ms,
+                x=x,
+                y=y,
+                object_type=obj_type
+            ))
+            
     metrics = {
         "inference_time_ms": (time.time() - start_time) * 1000.0,
         "nodes_predicted": len(predicted_objects)

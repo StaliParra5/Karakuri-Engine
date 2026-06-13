@@ -39,10 +39,10 @@ def generate_osz(
     
     # 3. [Difficulty]
     osu_content.append("[Difficulty]")
-    osu_content.append("HPDrainRate:5")
-    osu_content.append("CircleSize:4")
-    osu_content.append("OverallDifficulty:6")
-    osu_content.append("ApproachRate:9")
+    osu_content.append(f"HPDrainRate:{request.hp}")
+    osu_content.append(f"CircleSize:{request.cs}")
+    osu_content.append(f"OverallDifficulty:{request.od}")
+    osu_content.append(f"ApproachRate:{request.ar}")
     osu_content.append("SliderMultiplier:1.4")
     osu_content.append("SliderTickRate:1\n")
     

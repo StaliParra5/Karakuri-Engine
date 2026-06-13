@@ -9,7 +9,7 @@ import type {
 export const HISTORY_STORAGE_KEY = 'karakuri-dashboard-history'
 
 export function isTauriRuntime() {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+  return typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI_IPC__' in window)
 }
 
 export function extractFileName(filePath: string) {
@@ -44,8 +44,13 @@ export function createDefaultFormState(): DashboardFormState {
     title: '',
     artist: '',
     creator: '',
-    intensity: 62,
+    difficulty: 'Insane',
+    aiPrompt: '',
     backgroundPath: '',
+    cs: 4.0,
+    ar: 9.0,
+    od: 8.0,
+    hp: 6.0,
   }
 }
 
@@ -88,8 +93,13 @@ export function buildHistoryEntry(
       title: metadata.title,
       artist: metadata.artist,
       creator: metadata.creator,
-      intensity: metadata.intensity,
+      difficulty: metadata.difficulty,
+      aiPrompt: metadata.aiPrompt,
       backgroundPath: metadata.backgroundPath,
+      cs: metadata.cs,
+      ar: metadata.ar,
+      od: metadata.od,
+      hp: metadata.hp,
     },
     result: summarizeAnalysis(result),
   }

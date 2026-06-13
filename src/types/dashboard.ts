@@ -10,8 +10,13 @@ export interface DashboardFormState {
   title: string
   artist: string
   creator: string
-  intensity: number
+  difficulty: string
+  aiPrompt: string
   backgroundPath: string
+  cs: number
+  ar: number
+  od: number
+  hp: number
 }
 
 export interface FullAnalysisResponse {
@@ -31,8 +36,13 @@ export interface HistoryMetadata {
   title: string
   artist: string
   creator: string
-  intensity: number
+  difficulty: string
+  aiPrompt: string
   backgroundPath: string
+  cs: number
+  ar: number
+  od: number
+  hp: number
 }
 
 export interface HistoryResultSummary {

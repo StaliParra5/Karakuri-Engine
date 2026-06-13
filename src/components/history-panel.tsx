@@ -58,7 +58,7 @@ function SortableHistoryItem({ entry, onReuse }: SortableHistoryItemProps) {
             </span>
           </div>
           <p className="text-xs text-[#b9cacb] font-label-mono truncate">
-            {entry.metadata.artist || 'Unknown artist'} · {formatDuration(entry.result.durationMs)} · Intensity: {entry.metadata.intensity}
+            {entry.metadata.artist || 'Unknown artist'} · {formatDuration(entry.result.durationMs)} · Diff: {entry.metadata.difficulty}
           </p>
         </div>
         <button
