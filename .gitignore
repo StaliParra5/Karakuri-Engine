@@ -29,3 +29,8 @@ src-tauri/target/
 __pycache__/
 *.pyc
 *.pyo
+
+# Build artifacts
+engine/build/
+engine/dist/
+src-tauri/binaries/

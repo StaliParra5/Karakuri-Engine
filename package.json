@@ -9,8 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "build:sidecar:linux": "./scripts/build_release.sh",
+    "build:sidecar:windows": "powershell -ExecutionPolicy Bypass -File scripts/build_release.ps1",
+    "tauri:dev": "PATH=$HOME/.cargo/bin:$PATH tauri dev",
+    "tauri:build": "PATH=$HOME/.cargo/bin:$PATH tauri build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+export PATH="$HOME/.cargo/bin:$PATH"
+
 echo "=== [1/3] Construyendo sidecar Python con PyInstaller ==="
 cd engine
 source .venv/bin/activate
@@ -10,7 +12,13 @@ cd ..
 echo "=== [2/3] Preparando directorio de binarios de Tauri ==="
 mkdir -p src-tauri/binaries
 
-TARGET_TRIPLE=$(rustc -Vv | grep host | cut -f 2 -d ' ' || echo "x86_64-unknown-linux-gnu")
+TARGET_TRIPLE="x86_64-unknown-linux-gnu"
+if command -v rustc >/dev/null 2>&1; then
+    DETECTED=$(rustc -Vv | grep host | cut -f 2 -d ' ' || true)
+    if [ -n "$DETECTED" ]; then
+        TARGET_TRIPLE="$DETECTED"
+    fi
+fi
 echo "Target detectado: $TARGET_TRIPLE"
 
 if [ -f "engine/dist/engine_main" ]; then

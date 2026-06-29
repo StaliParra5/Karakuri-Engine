@@ -1,0 +1,75 @@
+name: Release Build (Linux & Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            args: ''
+            target: 'x86_64-unknown-linux-gnu'
+            script: './scripts/build_release.sh'
+          - platform: 'windows-latest'
+            args: ''
+            target: 'x86_64-pc-windows-msvc'
+            script: 'powershell -ExecutionPolicy Bypass -File scripts/build_release.ps1'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libsndfile1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          cd engine
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build Sidecar & Frontend Bundle
+        run: ${{ matrix.script }}
+
+      - name: Build Tauri App & Installers
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__ # Change or rely on tag
+          releaseName: 'Karakuri Engine v__VERSION__'
+          releaseBody: 'Automated cross-platform release build for Linux and Windows.'
+          releaseDraft: true
+          prerelease: false
