@@ -19,7 +19,7 @@ def quantize_model_if_needed(fp32_path: str, qint8_path: str):
         )
         print("STATUS: Cuantización dinámica completada.")
 
-def run_spatial_inference(rhythm_data, audio_path: str, progress_callback=None) -> SpatialAnalysisResponse:
+def run_spatial_inference(rhythm_data, audio_path: str, progress_callback=None, custom_model_path: str | None = None) -> SpatialAnalysisResponse:
     import librosa
     if progress_callback:
         progress_callback("Iniciando Fase 2 (Espacial)")
@@ -30,13 +30,19 @@ def run_spatial_inference(rhythm_data, audio_path: str, progress_callback=None) 
     fp32_path = os.path.join(models_dir, "osusync_model_v1_fp32.onnx")
     qint8_path = os.path.join(models_dir, "osusync_model_v1.onnx")
     
-    if progress_callback:
-        progress_callback("Verificando e inicializando motor ONNX")
-    quantize_model_if_needed(fp32_path, qint8_path)
+    model_to_load = qint8_path
+    if custom_model_path and os.path.exists(custom_model_path):
+        if progress_callback:
+            progress_callback(f"Cargando modelo personalizado: {custom_model_path}")
+        model_to_load = custom_model_path
+    else:
+        if progress_callback:
+            progress_callback("Verificando e inicializando motor ONNX estándar")
+        quantize_model_if_needed(fp32_path, qint8_path)
     
     if progress_callback:
         progress_callback("Cargando grafo ONNX en memoria")
-    session = ort.InferenceSession(qint8_path, providers=['CPUExecutionProvider'])
+    session = ort.InferenceSession(model_to_load, providers=['CPUExecutionProvider'])
     input_name = session.get_inputs()[0].name
     
     if progress_callback:

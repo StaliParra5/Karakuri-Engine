@@ -202,6 +202,9 @@ function App() {
           artist: formState.artist,
           creator: formState.creator,
           difficulty: formState.difficulty,
+          mapping_style: formState.mappingStyle,
+          game_mode: formState.gameMode,
+          custom_model_path: formState.customModelPath || null,
           prompt: formState.aiPrompt,
           background_path: formState.backgroundPath,
           cs: formState.cs,
@@ -252,6 +255,9 @@ function App() {
       artist: entry.metadata.artist,
       creator: entry.metadata.creator,
       difficulty: entry.metadata.difficulty,
+      mappingStyle: entry.metadata.mappingStyle || 'Standard',
+      gameMode: entry.metadata.gameMode || 'Standard',
+      customModelPath: entry.metadata.customModelPath || '',
       aiPrompt: entry.metadata.aiPrompt,
       backgroundPath: entry.metadata.backgroundPath,
       cs: entry.metadata.cs ?? 4.0,
@@ -262,7 +268,12 @@ function App() {
     setAnalysisResult(null)
     setAnalysisError(null)
     setExportSuccess(false)
-    reuseHistorySelection(audio, entry.metadata)
+    reuseHistorySelection(audio, {
+      ...entry.metadata,
+      mappingStyle: entry.metadata.mappingStyle || 'Standard',
+      gameMode: entry.metadata.gameMode || 'Standard',
+      customModelPath: entry.metadata.customModelPath || '',
+    })
     // Switch to converter tab when reusing metadata so user can check/tweak
     setActiveTab('converter')
   }
@@ -275,7 +286,7 @@ function App() {
           {/* Logo Area */}
           <div className="h-20 flex items-center gap-3 px-6 border-b border-white/10">
             <span className="material-symbols-outlined text-[#00f2ff] text-3xl">auto_awesome</span>
-            <span className="font-display-lg font-bold text-lg text-white tracking-tighter">Karakuri Engine</span>
+            <h2 className="font-display-lg font-bold text-lg text-white tracking-tighter">Karakuri Engine</h2>
           </div>
           
           {/* Navigation Links */}
@@ -424,8 +435,17 @@ function App() {
                     El motor analiza la señal de audio y ejecuta predicciones espaciales en la red ONNX local, generando y copiando un archivo .osz empaquetado directamente en la carpeta de canciones de tu osu!.
                   </p>
                 </div>
-                
-                <ResultPanel analysisError={analysisError} analysisResult={analysisResult} exportSuccess={exportSuccess} />
+                <ResultPanel
+                  analysisError={analysisError}
+                  analysisResult={analysisResult}
+                  exportSuccess={exportSuccess}
+                  formState={formState}
+                  selectedAudio={selectedAudio}
+                  backendUrl={backendUrl}
+                  onRepackageSuccess={(newOszPath) => {
+                    setAnalysisResult((cur) => cur ? { ...cur, osz_path: newOszPath } : null)
+                  }}
+                />
               </div>
               
               <div className="lg:col-span-4 flex flex-col gap-6">

@@ -110,11 +110,11 @@ class RhythmAnalysisApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         stdout_output = stdout_buffer.getvalue()
-        self.assertIn("STATUS: loading audio", stdout_output)
-        self.assertIn("STATUS: computing stft", stdout_output)
-        self.assertIn("STATUS: detecting onsets", stdout_output)
-        self.assertIn("STATUS: tracking beats", stdout_output)
-        self.assertIn("STATUS: analysis complete", stdout_output)
+        self.assertIn('"message": "loading audio"', stdout_output)
+        self.assertIn('"message": "computing stft"', stdout_output)
+        self.assertIn('"message": "detecting onsets"', stdout_output)
+        self.assertIn('"message": "tracking beats"', stdout_output)
+        self.assertIn('"message": "analysis complete"', stdout_output)
 
     def test_analyze_rhythm_does_not_block_health_checks(self) -> None:
         ready = threading.Event()

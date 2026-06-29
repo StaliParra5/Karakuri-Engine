@@ -56,7 +56,11 @@ fn reserve_loopback_port() -> std::io::Result<u16> {
 fn resolve_engine_command() -> (String, Vec<String>) {
   if cfg!(debug_assertions) {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let python = manifest_dir.join("../engine/.venv/Scripts/python.exe");
+    let python = if cfg!(target_os = "windows") {
+      manifest_dir.join("../engine/.venv/Scripts/python.exe")
+    } else {
+      manifest_dir.join("../engine/.venv/bin/python")
+    };
     let script = manifest_dir.join("../engine/main.py");
 
     (

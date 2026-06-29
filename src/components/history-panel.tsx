@@ -62,6 +62,7 @@ function SortableHistoryItem({ entry, onReuse }: SortableHistoryItemProps) {
           </p>
         </div>
         <button
+          aria-label={`Reuse ${entry.audioFileName}`}
           className="bg-[#00f2ff]/10 border border-[#00f2ff]/30 text-[#00f2ff] hover:bg-[#00f2ff]/20 hover:border-[#00f2ff]/50 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-center flex-shrink-0"
           onClick={() => onReuse(entry)}
           type="button"

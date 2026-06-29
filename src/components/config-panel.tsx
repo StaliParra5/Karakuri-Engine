@@ -18,8 +18,9 @@ export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: Con
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-2">
-            <label className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Song Title</label>
+            <label htmlFor="title" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Song Title</label>
             <input
+              id="title"
               className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md"
               placeholder="e.g. Brain Power"
               type="text"
@@ -29,8 +30,9 @@ export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: Con
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Artist</label>
+            <label htmlFor="artist" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Artist</label>
             <input
+              id="artist"
               className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md"
               placeholder="e.g. NOMA"
               type="text"
@@ -40,8 +42,9 @@ export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: Con
           </div>
 
           <div className="flex flex-col gap-2 md:col-span-2">
-            <label className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Beatmap Creator</label>
+            <label htmlFor="creator" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Beatmap Creator</label>
             <input
+              id="creator"
               className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md"
               placeholder="Your username"
               type="text"
@@ -59,10 +62,26 @@ export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: Con
           AI Generation Settings
         </h3>
         
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex flex-col gap-2">
-            <label className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Map Difficulty</label>
+            <label htmlFor="gameMode" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Game Mode</label>
             <select
+              id="gameMode"
+              className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md cursor-pointer"
+              value={formState.gameMode || 'Standard'}
+              onChange={(event) => onFormChange('gameMode', event.target.value)}
+            >
+              <option value="Standard">Standard (osu!)</option>
+              <option value="Taiko">Taiko</option>
+              <option value="Catch">Catch the Beat</option>
+              <option value="Mania">Mania (4K/7K)</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="difficulty" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Map Difficulty</label>
+            <select
+              id="difficulty"
               className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md cursor-pointer"
               value={formState.difficulty}
               onChange={(event) => onFormChange('difficulty', event.target.value)}
@@ -76,15 +95,50 @@ export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: Con
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">AI Directives (Prompt)</label>
-            <textarea
-              className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md resize-none"
-              placeholder="e.g. Mapea con saltos largos y agresivos, o prioriza streams técnicos rápidos..."
-              rows={3}
-              value={formState.aiPrompt}
-              onChange={(event) => onFormChange('aiPrompt', event.target.value)}
-            />
+            <label htmlFor="mappingStyle" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">Mapping Style Preset</label>
+            <select
+              id="mappingStyle"
+              className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md cursor-pointer"
+              value={formState.mappingStyle || 'Standard'}
+              onChange={(event) => onFormChange('mappingStyle', event.target.value)}
+            >
+              <option value="Standard">Standard</option>
+              <option value="Jump Training">Jump Training</option>
+              <option value="Stream Heavy">Stream Heavy</option>
+              <option value="Tech">Tech</option>
+              <option value="Sotarks Style (High Jump)">Sotarks Style (High Jump)</option>
+              <option value="Monstrata Style (Hexagon Flow)">Monstrata Style (Hexagon Flow)</option>
+              <option value="Kroytz Style (Tech Slider)">Kroytz Style (Tech Slider)</option>
+            </select>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="customModelPath" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider flex items-center justify-between">
+            <span>Custom AI Weights Path (.onnx / .pt)</span>
+            <span className="text-[10px] text-white/50 lowercase font-normal">Opcional: Ruta absoluta a tu modelo entrenado</span>
+          </label>
+          <input
+            id="customModelPath"
+            type="text"
+            className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-mono text-xs"
+            placeholder="e.g. /home/stan/models/my_custom_mapper.onnx"
+            value={formState.customModelPath || ''}
+            onChange={(event) => onFormChange('customModelPath', event.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="aiPrompt" className="font-label-mono text-xs text-[#00dbe7] uppercase tracking-wider">AI Directives (Prompt)</label>
+          <textarea
+            id="aiPrompt"
+            className="bg-[#080e1b] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#00f2ff] focus:ring-1 focus:ring-[#00f2ff] transition-colors font-body-md resize-none"
+            placeholder="e.g. Mapea con saltos largos y agresivos, o prioriza streams técnicos rápidos..."
+            rows={3}
+            value={formState.aiPrompt}
+            onChange={(event) => onFormChange('aiPrompt', event.target.value)}
+          />
+        </div>
 
           {/* osu! Difficulty Settings */}
           <div className="grid grid-cols-2 gap-4 mt-2">
@@ -111,7 +165,6 @@ export function ConfigPanel({ formState, onBackgroundBrowse, onFormChange }: Con
               </div>
             ))}
           </div>
-        </div>
       </section>
 
       {/* Background Image Selection */}

@@ -53,7 +53,7 @@ function DropTarget({ dropError, isDraggingAudio, selectedAudio, onBrowse }: Dro
             </div>
             <p className="text-xs font-label-mono text-[#b9cacb] truncate mb-1">{selectedAudio.path}</p>
             <span className="text-[10px] uppercase tracking-wider text-emerald-300 font-semibold">
-              Ready for /analyze/rhythm
+              Ready for analysis
             </span>
           </div>
         ) : (

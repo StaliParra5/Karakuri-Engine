@@ -14,7 +14,9 @@ export function useDashboardHistory() {
       return
     }
 
-    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(entries))
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(entries))
+    }
   }, [])
 
   useEffect(() => {
@@ -25,8 +27,12 @@ export function useDashboardHistory() {
         return
       }
 
-      const rawEntries = window.localStorage.getItem(HISTORY_STORAGE_KEY)
-      setHistoryEntries(rawEntries ? (JSON.parse(rawEntries) as DashboardHistoryEntry[]) : [])
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const rawEntries = window.localStorage.getItem(HISTORY_STORAGE_KEY)
+        setHistoryEntries(rawEntries ? (JSON.parse(rawEntries) as DashboardHistoryEntry[]) : [])
+      } else {
+        setHistoryEntries([])
+      }
     }
 
     void loadHistory()

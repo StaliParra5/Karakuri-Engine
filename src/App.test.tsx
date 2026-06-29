@@ -32,15 +32,15 @@ describe('App', () => {
     vi.stubGlobal('fetch', vi.fn())
   })
 
-  it('renders the premium dashboard empty state outside tauri', () => {
+  it('renders the premium dashboard empty state outside tauri', async () => {
     render(<App />)
 
     expect(
       screen.getByRole('heading', { name: /karakuri engine/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/bridge offline/i)).toBeInTheDocument()
-    expect(screen.getByText(/drop an audio file/i)).toBeInTheDocument()
-    expect(screen.getByText(/metadata pipeline/i)).toBeInTheDocument()
+    expect(await screen.findByText(/bridge offline/i)).toBeInTheDocument()
+    expect(screen.getByText(/import audio track/i)).toBeInTheDocument()
+    expect(screen.getByText(/track metadata/i)).toBeInTheDocument()
   })
 
   it('accepts a dropped wav file and displays the audio selection', async () => {
@@ -121,25 +121,28 @@ describe('App', () => {
       }
       return undefined
     })
-    ;(fetch as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce({
+    ;(fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => {
+      if (url.includes('/analyze/full')) {
+        return {
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            engine: 'Karakuri v1.0',
+            sample_rate: 22050,
+            duration_ms: 4000,
+            tempo_bpm: 117.45,
+            beat_times_ms: [0, 511, 1022, 1533],
+            onset_times_ms: [0, 500, 1000],
+            frame_hop_length: 512,
+            analysis_window_fft: 2048,
+          }),
+        }
+      }
+      return {
         ok: true,
         json: async () => ({ status: 'ok', engine: 'Karakuri v1.0' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          status: 'ok',
-          engine: 'Karakuri v1.0',
-          sample_rate: 22050,
-          duration_ms: 4000,
-          tempo_bpm: 117.45,
-          beat_times_ms: [0, 511, 1022, 1533],
-          onset_times_ms: [0, 500, 1000],
-          frame_hop_length: 512,
-          analysis_window_fft: 2048,
-        }),
-      })
+      }
+    })
     onDragDropEventMock.mockImplementation(async (handler: (event: { payload: { type: string; paths: string[] } }) => void) => {
       handler({
         payload: {
@@ -162,9 +165,13 @@ describe('App', () => {
     fireEvent.click(await screen.findByRole('button', { name: /start analysis/i }))
 
     expect((await screen.findAllByText(/117\.45 bpm/i)).length).toBeGreaterThan(0)
-    expect(screen.getByText(/4 beats detected/i)).toBeInTheDocument()
-    expect(screen.getByText(/3 anchors/i)).toBeInTheDocument()
+    expect(screen.getByText(/4 beats/i)).toBeInTheDocument()
+    expect(screen.getByText(/3 onsets/i)).toBeInTheDocument()
     expect(invokeMock).toHaveBeenCalledWith('save_dashboard_history', expect.anything())
+
+    const launchViewerBtn = screen.getByRole('button', { name: /launch interactive beatmap viewer/i })
+    fireEvent.click(launchViewerBtn)
+    expect(screen.getByTestId('beatmap-canvas')).toBeInTheDocument()
   })
 
   it('loads a history entry and restores its configuration', async () => {
@@ -208,6 +215,7 @@ describe('App', () => {
 
     render(<App />)
 
+    fireEvent.click(screen.getAllByText(/Analysis History/i)[0])
     fireEvent.click(await screen.findByRole('button', { name: /reuse anthem\.wav/i }))
 
     await waitFor(() => {
