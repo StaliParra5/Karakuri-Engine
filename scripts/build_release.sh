@@ -5,7 +5,9 @@ export PATH="$HOME/.cargo/bin:$PATH"
 
 echo "=== [1/3] Construyendo sidecar Python con PyInstaller ==="
 cd engine
-source .venv/bin/activate
+if [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+fi
 pyinstaller build_engine.spec --clean -y
 cd ..
 
